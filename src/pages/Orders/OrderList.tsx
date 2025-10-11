@@ -1,0 +1,239 @@
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Eye, Search, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import { fetchOrders, deleteOrder } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import OrderReportDownload from "@/components/OrderReportDownload";
+
+const OrdersSkeleton = () => (
+  <div className="p-4 space-y-4">
+    {[...Array(8)].map((_, i) => (
+      <div key={i} className="flex items-center space-x-4 animate-pulse">
+        <div className="h-8 w-10 bg-gray-200 rounded" />
+        <div className="h-8 w-[200px] bg-gray-200 rounded" />
+        <div className="h-8 w-[150px] bg-gray-200 rounded" />
+        <div className="h-8 w-[100px] bg-gray-200 rounded" />
+        <div className="h-8 w-[120px] bg-gray-200 rounded" />
+        <div className="h-8 w-20 bg-gray-200 rounded ml-auto" />
+      </div>
+    ))}
+  </div>
+);
+
+const getStatusBadge = (status: string) => {
+  const statusConfig: { [key: string]: { variant: "default" | "secondary" | "destructive" | "outline", label: string } } = {
+    pending: { variant: "outline", label: "Pending" },
+    processing: { variant: "secondary", label: "Processing" },
+    shipped: { variant: "default", label: "Shipped" },
+    delivered: { variant: "default", label: "Delivered" },
+    cancelled: { variant: "destructive", label: "Cancelled" },
+    refunded: { variant: "destructive", label: "Refunded" },
+  };
+
+  const config = statusConfig[status.toLowerCase()] || { variant: "outline", label: status };
+  return <Badge variant={config.variant}>{config.label}</Badge>;
+};
+
+const OrderList = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchOrdersData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchOrders({ page, search: searchQuery });
+      console.log("res", res);
+      setOrders(res.data?.data || []);
+      setTotalPages(res.data?.last_page || 1);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Failed to load orders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrdersData();
+  }, [page, searchQuery]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(1);
+  };
+
+  const handleDelete = async (id: number) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will delete the order permanently.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteOrder(String(id));
+        toast.success("Order deleted successfully");
+        fetchOrdersData();
+      } catch (error) {
+        toast.error("Failed to delete order");
+      }
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+        <OrderReportDownload onRefresh={fetchOrdersData} />
+      </div>
+
+      <Card className="p-4">
+        <div className="flex items-center mb-4">
+          <Search className="w-5 h-5 text-gray-500 mr-2" />
+          <Input
+            placeholder="Search by order ID, customer name, or email..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="max-w-sm"
+          />
+        </div>
+
+        <div className="rounded-md border min-h-[200px]">
+          {loading ? (
+            <OrdersSkeleton />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      No orders found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  orders.map((order: any) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">#{order.order_number || order.id}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{order.customer_name || order.user?.name || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{order.customer_email || order.user?.email || 'N/A'}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(order.created_at)}</TableCell>
+                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="font-medium">
+                        {formatCurrency(order.total_amount || order.total || 0)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <Button variant="outline" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/orders/${order.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(order.id)}>
+                              <MoreHorizontal className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center mt-4">
+          <div>
+            Showing{" "}
+            <span className="font-semibold">
+              {orders.length === 0 ? 0 : (page - 1) * 10 + 1} to{" "}
+              {page * 10 > totalPages * 10 ? totalPages * 10 : page * 10}
+            </span>{" "}
+            of <span className="font-semibold">{totalPages * 10}</span> entries
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              disabled={page === totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default OrderList; 
