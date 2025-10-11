@@ -245,10 +245,11 @@ export const updateBlog = async (id: string, payload: any) => {
   return response.data;
 };
 
-export const deleteBlog = async (slug: string) => {
+export const deleteBlog = async (id: string) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
+  console.log("token=",token)
   const response = await api.delete(
-    `/k/blogs/delete/${slug}`,
+    `/k/blogs/delete/${id}`,
     {
       headers: {
         Accept: "application/json",

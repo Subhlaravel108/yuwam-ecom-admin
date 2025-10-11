@@ -20,7 +20,7 @@ import {
 import { Edit, Eye, Plus, Search, Trash2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { format } from 'date-fns';
-import { fetchBlogs, deleteBlog } from "@/lib/api";
+import api, { fetchBlogs, deleteBlog } from "@/lib/api";
 import Swal from "sweetalert2";
 
 const BlogsSkeleton = () => (
@@ -70,7 +70,7 @@ const BlogsList = () => {
     setPage(1);
   };
 
-  const handleDeleteBlog = async (slug: string) => {
+  const handleDeleteBlog = async (id: string) => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "This action cannot be undone.",
@@ -83,9 +83,11 @@ const BlogsList = () => {
 
     if (result.isConfirmed) {
       try {
-        await deleteBlog(slug);
-        setBlogs(blogs.filter((blog: any) => blog.slug !== slug));
+        await deleteBlog(id);
+        // const res=await api.delete("/")
+        // setBlogs(blogs.filter((blog: any) => blog.slug !== slug));
         toast.success("Blog post deleted successfully");
+        loadBlogs()
       } catch (e) {
         toast.error("Failed to delete blog");
       }
@@ -175,7 +177,7 @@ const BlogsList = () => {
                                 Edit
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteBlog(blog.slug)}>
+                            <DropdownMenuItem onClick={() => handleDeleteBlog(blog.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>

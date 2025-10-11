@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { fetchProduct, createProduct, updateProduct, fetchAllCategories } from "@/lib/api";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 const steps = [
   "Title & Meta",
@@ -291,6 +293,7 @@ const ProductForm = () => {
                     <div>
                       <label className="font-medium">Meta Description</label>
                       <Textarea name="meta_description" value={product.meta_description} onChange={handleChange} disabled={isLoading} />
+                      
                     </div>
                     <div>
                       <label className="font-medium">Meta Keywords</label>
@@ -325,7 +328,16 @@ const ProductForm = () => {
 
                     <div className="md:col-span-2">
                       <label className="font-medium">Description</label>
-                      <Textarea name="description" value={product.description} onChange={handleChange} disabled={isLoading} />
+                      {/* <Textarea name="description" value={product.description} onChange={handleChange} disabled={isLoading} /> */}
+
+                        <ReactQuill
+                                          id="description"
+                                          value={product.description}
+                                          onChange={value => setProduct(prev => ({ ...prev, description: value }))}
+                                          placeholder="Write your product description here"
+                                          theme="snow"
+                                          style={{ minHeight: 200 }}
+                                        />
                     </div>
                   </div>
                   
