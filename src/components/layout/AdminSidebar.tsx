@@ -162,7 +162,7 @@ const AdminSidebar = () => {
 
           {/* Footer */}
           <div className="p-4 border-t border-sidebar-border/60 text-xs text-sidebar-foreground/60">
-            <p className={cn(isCollapsed ? "hidden" : "block")}>Yuwam Admin v1.0</p>
+            <p className={cn(isCollapsed ? "hidden" : "block")}>Yuwam Admin v1.00</p>
           </div>
         </div>
       </div>
