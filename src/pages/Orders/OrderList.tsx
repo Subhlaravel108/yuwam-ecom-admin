@@ -149,6 +149,8 @@ const OrderList = () => {
                   <TableHead>Order ID</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Payment Method</TableHead>
+                  <TableHead>Payment Status</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -172,6 +174,8 @@ const OrderList = () => {
                         </div>
                       </TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
+                      <TableCell>{order.payment_method || 'N/A'}</TableCell>
+                      <TableCell>{order.payment_status || 'N/A'}</TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
                       <TableCell className="font-medium">
                         {formatCurrency(order.total_amount || order.total || 0)}

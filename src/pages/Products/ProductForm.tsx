@@ -31,6 +31,7 @@ const initialProduct = {
   featured_image: "",
   gallery_images: [] as string[],
   price: "",
+  discount_price: "",
   currency: "INR",
   stock: "",
   attributes: [] as { name: string; value: string }[],
@@ -380,6 +381,10 @@ const ProductForm = () => {
                     <div>
                       <label className="font-medium">Stock</label>
                       <Input name="stock" type="number" value={product.stock} onChange={handleChange} disabled={isLoading} />
+                    </div>
+                    <div>
+                      <label className="font-medium">Discount price</label>
+                      <Input name="discount_price" type="number" value={product.discount_price} onChange={handleChange} disabled={isLoading} />
                     </div>
                   </div>
                 )}

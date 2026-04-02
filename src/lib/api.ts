@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
+  baseURL: "https://api.yuwam.edu.in/api/v1",
   // baseURL: "http://192.168.1.5:8000/api/v1",
 });
 
@@ -14,6 +14,8 @@ export const loginApi = async (email: string, password: string) => {
   formData.append("password", password);
 
   const response = await api.post("/login", formData);
+  // console.log("Login response:", response.data);
+  
   return response.data;
 };
 
