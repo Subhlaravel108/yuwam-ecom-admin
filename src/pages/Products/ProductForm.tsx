@@ -37,6 +37,9 @@ const initialProduct = {
   attributes: [] as { name: string; value: string }[],
   status: "1",
   category_id: "",
+  product_type: "physical", // physical or digital
+  ebook_pages: "",
+  ebook_file: null as File | null,
 };
 
 const ProductForm = () => {
@@ -139,6 +142,10 @@ const ProductForm = () => {
     // }
     if (step === 2) {
       if (!product.price) newErrors.price = "Price is required";
+      if (product.product_type === "digital") {
+        if (!product.ebook_pages) newErrors.ebook_pages = "E-book pages count is required";
+        if (!isEdit && !product.ebook_file) newErrors.ebook_file = "E-book file is required";
+      }
     }
     setErrors(newErrors);
     // if (Object.keys(newErrors).length > 0) {
@@ -221,14 +228,51 @@ const ProductForm = () => {
     if (!validateStep()) return;
     setIsLoading(true);
     try {
-      const payload = { ...product, category_id: product.category_id };
+      const formData = new FormData();
+      
+      // Basic fields
+      formData.append("name", product.name);
+      formData.append("description", product.description);
+      formData.append("meta_title", product.meta_title);
+      formData.append("meta_description", product.meta_description);
+      formData.append("meta_keywords", product.meta_keywords);
+      formData.append("category_id", product.category_id);
+      formData.append("price", product.price);
+      formData.append("discount_price", product.discount_price || "0");
+      formData.append("currency", product.currency);
+      formData.append("stock", product.stock || "0");
+      formData.append("status", product.status);
+      formData.append("product_type", product.product_type);
+
+      // E-book specific
+      if (product.product_type === "digital") {
+        formData.append("ebook_pages", product.ebook_pages);
+        if (product.ebook_file) {
+          formData.append("ebook_file", product.ebook_file);
+        }
+      }
+
+      // Images
+      if (product.featured_image) {
+        formData.append("featured_image", product.featured_image);
+      }
+      product.gallery_images.forEach((img, index) => {
+        formData.append(`gallery_images[${index}]`, img);
+      });
+
+      // Attributes
+      product.attributes.forEach((attr, index) => {
+        formData.append(`attributes[${index}][name]`, attr.name);
+        formData.append(`attributes[${index}][value]`, attr.value);
+      });
+
       if (isEdit && product.id) {
-        await updateProduct(product.id, payload);
+        await updateProduct(product.id, formData);
         toast.success("Product updated successfully!", {
           closeButton: true,
         });
       } else {
-        await createProduct(payload);
+        await createProduct(formData);
         toast.success("Product created successfully!", {
           closeButton: true,
         });
@@ -299,6 +343,22 @@ const ProductForm = () => {
                     <div>
                       <label className="font-medium">Meta Keywords</label>
                       <Input name="meta_keywords" value={product.meta_keywords} onChange={handleChange} disabled={isLoading} />
+                    </div>
+                    <div>
+                      <label className="font-medium">Product Type *</label>
+                      <Select
+                        value={product.product_type}
+                        onValueChange={(value) => setProduct((prev) => ({ ...prev, product_type: value }))}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="physical">Physical</SelectItem>
+                          <SelectItem value="digital">Digital (E-book)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="font-medium">Category *</label>
@@ -386,6 +446,40 @@ const ProductForm = () => {
                       <label className="font-medium">Discount price</label>
                       <Input name="discount_price" type="number" value={product.discount_price} onChange={handleChange} disabled={isLoading} />
                     </div>
+
+                    {product.product_type === "digital" && (
+                      <>
+                        <div>
+                          <label className="font-medium">E-book Pages *</label>
+                          <Input
+                            name="ebook_pages"
+                            type="number"
+                            value={product.ebook_pages}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                            placeholder="e.g. 1000"
+                          />
+                          {errors.ebook_pages && <p className="text-xs text-red-500">{errors.ebook_pages}</p>}
+                        </div>
+                        <div>
+                          <label className="font-medium">E-book File (PDF) {isEdit ? "(Optional)" : "*"}</label>
+                          <Input
+                            type="file"
+                            accept=".pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setProduct((prev) => ({ ...prev, ebook_file: file }));
+                                setDirty(true);
+                              }
+                            }}
+                            disabled={isLoading}
+                          />
+                          {errors.ebook_file && <p className="text-xs text-red-500">{errors.ebook_file}</p>}
+                          {isEdit && <p className="text-xs text-gray-500 mt-1 italic">Leave empty to keep existing file.</p>}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
