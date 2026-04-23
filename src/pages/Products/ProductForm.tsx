@@ -18,7 +18,7 @@ const steps = [
   "Images",
   "Price",
   "Attributes",
-  "Review & Submit",
+  // "Review & Submit",
 ];
 
 const initialProduct = {
@@ -164,12 +164,14 @@ const ProductForm = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
     setDirty(true);
   };
 
   // Handle category change
   const handleCategoryChange = (value: string) => {
     setProduct((prev) => ({ ...prev, category_id: value }));
+    setErrors((prev) => ({ ...prev, category_id: "" }));
     setDirty(true);
   };
 
@@ -443,7 +445,7 @@ const ProductForm = () => {
                       <Input name="stock" type="number" value={product.stock} onChange={handleChange} disabled={isLoading} />
                     </div>
                     <div>
-                      <label className="font-medium">Discount price</label>
+                      <label className="font-medium">Discounted price</label>
                       <Input name="discount_price" type="number" value={product.discount_price} onChange={handleChange} disabled={isLoading} />
                     </div>
 
@@ -516,12 +518,12 @@ const ProductForm = () => {
                 )}
 
                 {/* Step 5: Review & Submit */}
-                {step === 4 && (
+                {/* {step === 4 && (
                   <div className="space-y-4">
                     <h3 className="font-bold text-lg mb-2">Review Your Product</h3>
                     <pre className="bg-gray-100 p-4 rounded text-xs overflow-x-auto">{JSON.stringify(product, null, 2)}</pre>
                   </div>
-                )}
+                )} */}
 
                 <div className="flex justify-between mt-8">
                   {step > 0 && (
@@ -530,16 +532,16 @@ const ProductForm = () => {
                     </Button>
                   )}
                   {step === 0 ? (
-                    <Button type="button" variant="outline" onClick={handleBack} disabled={isLoading}>
+                    <Button  type="button" variant="outline" onClick={handleBack} disabled={isLoading}>
                       <ArrowLeft className="mr-2 h-4 w-4" /> Back
                     </Button>
                   ) : null}
                   {step < steps.length - 1 ? (
-                    <Button type="button" onClick={nextStep} disabled={isLoading}>
+                    <Button key="next-step-button" type="button" onClick={nextStep} disabled={isLoading}>
                       Next
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={isLoading}>
+                    <Button key="submit-button" type="submit" disabled={isLoading}>
                       {isLoading ? "Saving..." : "Submit"}
                     </Button>
                   )}
