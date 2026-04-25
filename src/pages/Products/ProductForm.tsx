@@ -18,7 +18,7 @@ const steps = [
   "Images",
   "Price",
   "Attributes",
-  // "Review & Submit",
+  "Review & Submit",
 ];
 
 const initialProduct = {
@@ -57,6 +57,45 @@ const ProductForm = () => {
   const [catError, setCatError] = useState("");
   const [dirty, setDirty] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const getCategoryName = (categoryId: string) => {
+    const c = (Array.isArray(categories) ? categories : []).find(
+      (cat) => String(cat.id) === String(categoryId)
+    );
+    return c?.name || "—";
+  };
+
+  const plainDescriptionPreview = (html: string) => {
+    if (!html || !html.replace(/<[^>]*>/g, "").trim()) return "—";
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    const text = (tmp.textContent || tmp.innerText || "").trim();
+    if (text.length > 400) return text.slice(0, 400) + "…";
+    return text || "—";
+  };
+
+  const formatApiError = (err: any): string => {
+    const data = err?.response?.data;
+    if (!data) return err?.message || "Failed to save product.";
+    if (typeof data.message === "string" && data.message) return data.message;
+    if (data.message && typeof data.message === "object") {
+      try {
+        return Object.entries(data.message)
+          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+          .join("\n");
+      } catch {
+        return String(data.message);
+      }
+    }
+    if (data.errors && typeof data.errors === "object") {
+      return Object.entries(data.errors)
+        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+        .join("\n");
+    }
+    if (typeof data === "string") return data;
+    return "Failed to save product.";
+  };
 
   // Fetch categories
   useEffect(() => {
@@ -148,17 +187,33 @@ const ProductForm = () => {
       }
     }
     setErrors(newErrors);
-    // if (Object.keys(newErrors).length > 0) {
-    //   toast.error("Please fix the errors before proceeding.");
-    // }
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateEntireForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!product.name) newErrors.name = "Title is required";
+    if (!product.category_id) newErrors.category_id = "Category is required";
+    if (!product.price) newErrors.price = "Price is required";
+    if (product.product_type === "digital") {
+      if (!product.ebook_pages) newErrors.ebook_pages = "E-book pages count is required";
+      if (!isEdit && !product.ebook_file) newErrors.ebook_file = "E-book file is required";
+    }
+    setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Step navigation
   const nextStep = () => {
-    if (validateStep()) setStep((s) => s + 1);
+    if (validateStep()) {
+      setSubmitError(null);
+      setStep((s) => s + 1);
+    }
   };
-  const prevStep = () => setStep((s) => s - 1);
+  const prevStep = () => {
+    setSubmitError(null);
+    setStep((s) => s - 1);
+  };
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -227,7 +282,12 @@ const ProductForm = () => {
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep()) return;
+    if (step < steps.length - 1) return;
+    if (!validateEntireForm()) {
+      toast.error("Please fix the highlighted issues. Use Back to go to the right step.");
+      return;
+    }
+    setSubmitError(null);
     setIsLoading(true);
     try {
       const formData = new FormData();
@@ -282,7 +342,9 @@ const ProductForm = () => {
       setTimeout(() => navigate("/products"), 800);
     } catch (error: any) {
       console.log("error in upload product", error);
-      toast.error(error?.response?.data?.message || "Failed to save product.");
+      const msg = formatApiError(error);
+      setSubmitError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -517,13 +579,128 @@ const ProductForm = () => {
                   </div>
                 )}
 
-                {/* Step 5: Review & Submit */}
-                {/* {step === 4 && (
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-lg mb-2">Review Your Product</h3>
-                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-x-auto">{JSON.stringify(product, null, 2)}</pre>
+                {/* Step 5: Review & Submit — readable summary + API/validation errors */}
+                {step === 4 && (
+                  <div className="space-y-6">
+                    <h3 className="font-semibold text-lg text-gray-900">Summary</h3>
+                    {submitError && (
+                      <div
+                        className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 whitespace-pre-wrap"
+                        role="alert"
+                      >
+                        <p className="font-medium mb-1">Server error</p>
+                        {submitError}
+                      </div>
+                    )}
+                    {Object.keys(errors).length > 0 && (
+                      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        <p className="font-medium mb-1">Please fix the following</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {Object.entries(errors)
+                            .filter(([, v]) => v)
+                            .map(([k, v]) => (
+                              <li key={k}>
+                                <span className="font-medium">{k}:</span> {v}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="grid gap-3 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Title</span>
+                        <span className="sm:col-span-2 font-medium text-gray-900 break-words">{product.name || "—"}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Category</span>
+                        <span className="sm:col-span-2 font-medium text-gray-900">{getCategoryName(product.category_id)}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Product type</span>
+                        <span className="sm:col-span-2 font-medium text-gray-900">
+                          {product.product_type === "digital" ? "Digital (E-book)" : "Physical"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Description</span>
+                        <span className="sm:col-span-2 text-gray-800 break-words">{plainDescriptionPreview(product.description)}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Meta</span>
+                        <div className="sm:col-span-2 space-y-1">
+                          <p><span className="text-gray-500">Title: </span>{product.meta_title || "—"}</p>
+                          <p><span className="text-gray-500">Description: </span>{product.meta_description || "—"}</p>
+                          <p><span className="text-gray-500">Keywords: </span>{product.meta_keywords || "—"}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Featured image</span>
+                        <span className="sm:col-span-2 break-all text-blue-700">
+                          {product.featured_image ? (
+                            <img src={product?.featured_image} alt="Featured" className="max-h-32 object-contain border" />
+                          ) : (
+                            "—"
+                          )}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Gallery</span>
+                        <div className="sm:col-span-2 space-y-1">
+                          {product.gallery_images.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {product.gallery_images.map((url, i) => (
+                                <div key={i} className="flex flex-col items-center gap-2">
+                                  <img src={url} alt={`Gallery ${i + 1}`} className="max-h-32 object-contain border" />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Price & stock</span>
+                        <div className="sm:col-span-2">
+                          {product.price || "—"} {product.currency}
+                          {product.discount_price ? ` (discount: ${product.discount_price})` : ""} · Stock: {product.stock || "0"}
+                        </div>
+                      </div>
+                      {product.product_type === "digital" && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                          <span className="text-gray-500">E-book</span>
+                          <div className="sm:col-span-2">
+                            <p>Pages: {product.ebook_pages || "—"}</p>
+                            <p>
+                              File:{" "}
+                              {product.ebook_file
+                                ? (product.ebook_file as File).name
+                                : isEdit
+                                  ? "Not replaced (optional)"
+                                  : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 border-b border-gray-100 pb-2">
+                        <span className="text-gray-500">Attributes</span>
+                        <div className="sm:col-span-2">
+                          {product.attributes.length > 0 ? (
+                            <ul className="space-y-1">
+                              {product.attributes.map((attr, idx) => (
+                                <li key={idx}>
+                                  <span className="font-medium">{attr.name}:</span> {attr.value}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )} */}
+                )}
 
                 <div className="flex justify-between mt-8">
                   {step > 0 && (
