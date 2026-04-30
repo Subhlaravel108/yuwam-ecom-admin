@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
-  baseURL: "http://10.95.4.86:9000/api/v1",
+  baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
+  // baseURL: "http://192.168.1.5:8000/api/v1",
 });
 
 export default api;
@@ -14,6 +14,8 @@ export const loginApi = async (email: string, password: string) => {
   formData.append("password", password);
 
   const response = await api.post("/login", formData);
+  // console.log("Login response:", response.data);
+
   return response.data;
 };
 
@@ -56,7 +58,7 @@ export const uploadTourImage = async (file: File) => {
     }
   );
 
-  console.log('test image ',res.data);
+  console.log('test image ', res.data);
   return res.data.url || res.data.path || res.data.data?.url;
 };
 
@@ -166,7 +168,7 @@ export const fetchCategory = async (slugOrId: string) => {
 
 export const updateCategory = async (id: string, payload: any) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
-  const response = await api.put( 
+  const response = await api.put(
     `/category/update/${id}`,
     payload,
     {
@@ -184,7 +186,7 @@ export const deleteCategory = async (id: string) => {
     `/category/delete/${id}`,
     {
       headers: {
-        Accept: "application/json", 
+        Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
     }
@@ -247,7 +249,7 @@ export const updateBlog = async (id: string, payload: any) => {
 
 export const deleteBlog = async (id: string) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
-  console.log("token=",token)
+  console.log("token=", token)
   const response = await api.delete(
     `/k/blogs/delete/${id}`,
     {
@@ -334,15 +336,34 @@ export const fetchProduct = async (id: string) => {
 export const createProduct = async (payload: any) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   const response = await api.post("/products/create", payload, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": payload instanceof FormData ? "multipart/form-data" : "application/json"
+    }
   });
   return response.data;
 };
 
 export const updateProduct = async (id: string, payload: any) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
-  const response = await api.put(`/products/update/${id}`, payload, {
-    headers: { Authorization: `Bearer ${token}` }
+
+  // Laravel workaround for PUT/PATCH with multipart/form-data
+  let finalPayload = payload;
+  let method = "put";
+  if (payload instanceof FormData) {
+    payload.append("_method", "PUT");
+    finalPayload = payload;
+    method = "post"; // Use POST with _method=PUT
+  }
+
+  const response = await api({
+    method: method,
+    url: `/products/update/${id}`,
+    data: finalPayload,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": payload instanceof FormData ? "multipart/form-data" : "application/json"
+    }
   });
   
   return response.data;
@@ -415,7 +436,7 @@ export const updateOrderTracking = async (id: string, payload: {
 export const downloadOrderInvoice = async (id: string) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   const response = await api.get(`/k/orders/${id}/invoice`, {
-    headers: { 
+    headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/pdf, application/json'
     },
@@ -430,7 +451,7 @@ export const downloadOrderInvoice = async (id: string) => {
     const error = JSON.parse(text);
     throw new Error(error.message || 'Failed to generate invoice');
   }
-  
+
   return response.data;
 };
 
@@ -445,7 +466,7 @@ export const updateOrderItemsPacking = async (orderId: string, payload: {
 }) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   const response = await api.post(`/k/orders/${orderId}/items/update-packing`, payload, {
-    headers: { 
+    headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
@@ -475,7 +496,7 @@ export const createScheduleRequest = async (payload: {
 }) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   const response = await api.post("/k/schedule/create", payload, {
-    headers: { 
+    headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
@@ -520,7 +541,7 @@ export const updateCoupon = async (id: string, payload: any) => {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
-};  
+};
 
 export const deleteCoupon = async (id: string) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
