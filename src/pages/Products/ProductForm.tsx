@@ -36,6 +36,8 @@ const initialProduct = {
   attributes: [] as { name: string; value: string }[],
   status: "1",
   category_id: "",
+  display_home: false,
+  sort_order: "",
 };
 
 const ProductForm = () => {
@@ -79,6 +81,7 @@ const ProductForm = () => {
       fetchProduct(id)
         .then((data) => {
           const prod = data.data || data;
+          console.log("fetched product", prod);
           // Map attributes to {name, value}
           const attributes = Array.isArray(prod.attributes)
             ? prod.attributes.map((attr: any) => ({
@@ -221,6 +224,7 @@ const ProductForm = () => {
     setIsLoading(true);
     try {
       const payload = { ...product, category_id: product.category_id };
+      console.log("payload to save", payload);
       if (isEdit && product.id) {
         await updateProduct(product.id, payload);
         toast.success("Product updated successfully!", {
@@ -324,6 +328,38 @@ const ProductForm = () => {
                         </Select>
                       )}
                       {errors.category_id && <p className="text-xs text-red-500">{errors.category_id}</p>}
+                    </div>
+
+                    <div>
+                      <label className="font-medium">Display on Home</label>
+                      <Select
+                        value={String(product.display_home ?? false)}
+                        onValueChange={(value) => {
+                          setProduct((prev) => ({ ...prev, display_home: value === "true" })); // Convert to boolean
+                          setDirty(true);
+                        }}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Yes</SelectItem>
+                          <SelectItem value="false">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="font-medium">Sort Order</label>
+                      <Input
+                        name="sort_order"
+                        type="number"
+                        value={product.sort_order}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        placeholder="e.g. 1, 2, 3"
+                      />
                     </div>
 
                     <div className="md:col-span-2">

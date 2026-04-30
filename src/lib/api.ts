@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
-  // baseURL: "http://192.168.1.5:8000/api/v1",
+  // baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
+  baseURL: "http://10.95.4.86:9000/api/v1",
 });
 
 export default api;
@@ -344,6 +344,7 @@ export const updateProduct = async (id: string, payload: any) => {
   const response = await api.put(`/products/update/${id}`, payload, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  
   return response.data;
 };
 

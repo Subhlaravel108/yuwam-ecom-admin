@@ -173,8 +173,8 @@ const Dashboard = () => {
                 </Link>
               }
             />
-            <StatCard
-              title="Active Tours"
+            {/* <StatCard
+              title=""
               value={stats?.total_active_tours ?? "-"}
               description="Currently active tours"
               icon={<Calendar className="h-4 w-4 text-white" />}
@@ -200,7 +200,7 @@ const Dashboard = () => {
                   </button>
                 </Link>
               }
-            />
+            /> */}
           </>
         )}
       </div>

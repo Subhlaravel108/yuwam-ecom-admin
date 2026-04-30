@@ -36,7 +36,7 @@ const SidebarItem = ({ icon: Icon, label, to, isActive, isCollapsed }: SidebarIt
           "w-full justify-start gap-3 pl-4 py-3 rounded-lg font-medium transition-all duration-200",
           isActive
             ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-inner ring-1 ring-sidebar-border"
-            : "hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90 text-sidebar-foreground/80"
+            :  "hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90 text-sidebar-foreground/80"
         )}
       >
         <Icon size={20} />
