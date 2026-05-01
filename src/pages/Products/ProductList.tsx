@@ -137,9 +137,9 @@ const ProductList = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((product: any) => (
+                  products.map((product: any,index: number) => (
                     <TableRow key={product.id}>
-                      <TableCell>{product.id}</TableCell>
+                      <TableCell>{(page - 1) * 10 + index + 1}</TableCell>
                       <TableCell>{product.sku || "-"}</TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-3">

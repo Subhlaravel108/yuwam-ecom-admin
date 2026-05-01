@@ -37,6 +37,11 @@ const initialProduct = {
   attributes: [] as { name: string; value: string }[],
   status: "1",
   category_id: "",
+  product_type: "physical",
+  ebook_pages: "",
+  ebook_file: null as File | null,
+  display_home: false,
+  sort_order: "",
 };
 
 const ProductForm = () => {
@@ -179,6 +184,7 @@ const ProductForm = () => {
     // }
     if (step === 2) {
       if (!product.price) newErrors.price = "Price is required";
+      if(!product.stock) newErrors.stock = "Stock is required";
       if (product.product_type === "digital") {
         if (!product.ebook_pages) newErrors.ebook_pages = "E-book pages count is required";
         if (!isEdit && !product.ebook_file) newErrors.ebook_file = "E-book file is required";
@@ -193,6 +199,7 @@ const ProductForm = () => {
     if (!product.name) newErrors.name = "Title is required";
     if (!product.category_id) newErrors.category_id = "Category is required";
     if (!product.price) newErrors.price = "Price is required";
+   
     if (product.product_type === "digital") {
       if (!product.ebook_pages) newErrors.ebook_pages = "E-book pages count is required";
       if (!isEdit && !product.ebook_file) newErrors.ebook_file = "E-book file is required";
@@ -288,7 +295,54 @@ const ProductForm = () => {
     setSubmitError(null);
     setIsLoading(true);
     try {
-      const payload = { ...product, category_id: product.category_id };
+      const formData = new FormData();
+
+      // Basic fields
+      formData.append("name", product.name);
+      formData.append("description", product.description ?? "");
+      formData.append("meta_title", product.meta_title ?? "");
+      formData.append("meta_description", product.meta_description ?? "");
+      formData.append("meta_keywords", product.meta_keywords ?? "");
+      formData.append("category_id", product.category_id ?? "");
+      formData.append("status", String(product.status ?? "1"));
+
+      // Pricing & stock
+      formData.append("price", product.price ?? "");
+      if (product.discount_price !== "" && product.discount_price != null) {
+        formData.append("discount_price", String(product.discount_price));
+      }
+      formData.append("currency", product.currency ?? "INR");
+      formData.append("stock", product.stock ?? "");
+
+      // Display options
+      formData.append("product_type", product.product_type ?? "physical");
+      formData.append("display_home", product.display_home ? "1" : "0");
+      if (product.sort_order !== "" && product.sort_order != null) {
+        formData.append("sort_order", String(product.sort_order));
+      }
+
+      // Digital (e-book) fields
+      if (product.product_type === "digital") {
+        formData.append("ebook_pages", product.ebook_pages ?? "");
+        if (product.ebook_file instanceof File) {
+          formData.append("ebook_file", product.ebook_file);
+        }
+      }
+
+      // Images (URLs returned by ImageUploader)
+      if (product.featured_image) {
+        formData.append("featured_image", product.featured_image);
+      }
+      (product.gallery_images || []).forEach((url, idx) => {
+        formData.append(`gallery_images[${idx}]`, url);
+      });
+
+      // Attributes
+      (product.attributes || []).forEach((attr, idx) => {
+        formData.append(`attributes[${idx}][name]`, attr.name);
+        formData.append(`attributes[${idx}][value]`, attr.value);
+      });
+
       if (isEdit && product.id) {
         await updateProduct(product.id, formData);
         toast.success("Product updated successfully!", {
@@ -498,6 +552,7 @@ const ProductForm = () => {
                     <div>
                       <label className="font-medium">Stock</label>
                       <Input name="stock" type="number" value={product.stock} onChange={handleChange} disabled={isLoading} />
+                      {errors.stock && <p className="text-xs text-red-500">{errors.stock}</p> }
                     </div>
                     <div>
                       <label className="font-medium">Discounted price</label>
