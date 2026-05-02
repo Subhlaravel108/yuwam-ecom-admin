@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
-  baseURL: "http://10.95.4.86:9000/api/v1",
+  baseURL: "https://api.yuwam.jaipurschools.com/api/v1",
+  // baseURL: "http://10.95.4.86:9000/api/v1",
 });
 
 export default api;
@@ -209,10 +209,28 @@ export const fetchBlogs = async ({ page = 1, search = "" } = {}) => {
   });
   return response.data;
 };
+export const fetchCourses = async ({ page = 1, search = "" } = {}) => {
+  const params = new URLSearchParams();
+  const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
+  params.append("page", String(page));
+  if (search) params.append("title", search);
+  // console.log("Fetching blogs with params:", params.toString());
+  const response = await api.get(`/listing/course?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
 
 export const fetchBlog = async (slugOrId: string) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   const response = await api.get(`/k/blogs/${slugOrId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+export const fetchCourse = async (slugOrId: string) => {
+  const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
+  const response = await api.get(`/detail/course/${slugOrId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -222,6 +240,21 @@ export const createBlog = async (payload: any) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   const response = await api.post(
     "/k/blogs/create",
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+    }
+  );
+  return response.data;
+};
+
+
+export const createCourse = async (payload: any) => {
+  const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
+  const response = await api.post(
+    "/store/course",
     payload,
     {
       headers: {
@@ -246,12 +279,40 @@ export const updateBlog = async (id: string, payload: any) => {
   );
   return response.data;
 };
+export const updateCourse = async (id: string, payload: any) => {
+  const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
+  console.log("Updating course with ID:", id, "and payload:", payload);
+  const response = await api.put(
+    `/update/course/${id}`,
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+    }
+  );
+  return response.data;
+};
 
 export const deleteBlog = async (id: string) => {
   const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
   console.log("token=", token)
   const response = await api.delete(
     `/k/blogs/delete/${id}`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
+export const deleteCourse = async (id: string) => {
+  const token = JSON.parse(localStorage.getItem("duser") || "{}")?.access_token || "";
+  console.log("token=", token)
+  const response = await api.delete(
+    `/delete/course/${id}`,
     {
       headers: {
         Accept: "application/json",

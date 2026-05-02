@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Percent,
   ChevronLeft,
+  BookOpen,
 } from "lucide-react";
 
 
@@ -79,6 +80,7 @@ const AdminSidebar = () => {
     { icon: Home, label: "Dashboard", to: "/dashboard" },
     { icon: Grid2x2Plus, label: "Categories", to: "/categories" },
     { icon: Boxes, label: "Products", to: "/products" },
+    {icon: BookOpen,label: "Courses" ,to: "/courses"},
     { icon: ShoppingCart, label: "Orders", to: "/orders" },
     { icon: Percent, label: "Coupons", to: "/coupons" },
     { icon: FileText, label: "Blogs", to: "/blogs" },

@@ -40,6 +40,8 @@ import CategoryForm from "./pages/Categories/CategoryForm";
 import ProductList from "./pages/Products/ProductList";
 import ProductForm from "./pages/Products/ProductForm";
 
+//courses
+import CourseForm from "./pages/courses/CourseForm";
 // Orders
 import OrderList from "./pages/Orders/OrderList";
 import OrderDetail from "./pages/Orders/OrderDetail";
@@ -50,6 +52,7 @@ import NotFound from "./pages/NotFound";
 // Coupons
 import CouponList from "./pages/Coupons/CouponList";
 import CouponForm from "./pages/Coupons/CouponForm";
+import CourseList from "./pages/courses/CourseList";
 
 const queryClient = new QueryClient();
 
@@ -219,6 +222,11 @@ const App = () => (
             <Route path="/products" element={<ProductList />} />
             <Route path="/products/add" element={<ProductForm />} />
             <Route path="/products/edit/:id" element={<ProductForm />} />
+
+            {/* Courses routes */}
+            <Route path="/courses" element={<CourseList/>}/>
+            <Route path="/course/add" element={<CourseForm/>}/>
+            <Route path="/course/edit/:id" element={<CourseForm/>}/>
 
             {/* Orders routes */}
             <Route path="/orders" element={<OrderList />} />
