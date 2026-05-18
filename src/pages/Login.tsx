@@ -55,8 +55,9 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
-          <div className="bg-theme-blue p-2 rounded-full text-white mb-4">
-            <Lock size={28} />
+          <div className=" rounded-full text-white mb-4">
+            {/* <Lock size={28} /> */}
+            <img src="/favicon.ico" alt="Lock Icon" className="w-12 h-12" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
           <CardDescription className="text-center">
