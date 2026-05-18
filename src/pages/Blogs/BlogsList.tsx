@@ -17,10 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Eye, Plus, Search, Trash2, MoreHorizontal } from "lucide-react";
+import { Edit, Plus, Search, Trash2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { format } from 'date-fns';
-import api, { fetchBlogs, deleteBlog } from "@/lib/api";
+import { fetchBlogs, deleteBlog } from "@/lib/api";
 import Swal from "sweetalert2";
 
 const BlogsSkeleton = () => (
@@ -45,14 +45,50 @@ const BlogsList = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [perPage, setPerPage] = useState(10);
 
   const loadBlogs = async () => {
     setLoading(true);
     try {
-      // console.log("Loading blogs for page:", page, "with search query:", searchQuery);
       const res = await fetchBlogs({ page, search: searchQuery });
-      setBlogs(res.data.data || []);
-      setTotalPages(res.last_page || 1);
+      const root = res as Record<string, unknown>;
+      const inner = root?.data as Record<string, unknown> | unknown[] | undefined;
+      let list: unknown[] = [];
+      let lastPage = 1;
+      let totalCount = 0;
+      let pageSize = 10;
+
+      // Laravel-style: { data: { data: [...], last_page, total, per_page } } and/or last_page on root
+      if (inner && typeof inner === "object" && !Array.isArray(inner) && Array.isArray((inner as { data?: unknown[] }).data)) {
+        const p = inner as { data: unknown[]; last_page?: number; total?: number; per_page?: number };
+        list = p.data;
+        lastPage = p.last_page ?? (root.last_page as number) ?? 1;
+        totalCount = Number(p.total) || Number(root.total) || 0;
+        pageSize = Number(p.per_page) || Number(root.per_page) || 10;
+      } else if (inner && typeof inner === "object" && !Array.isArray(inner) && "last_page" in inner) {
+        const p = inner as { data?: unknown[]; last_page?: number; total?: number; per_page?: number };
+        list = Array.isArray(p.data) ? p.data : [];
+        lastPage = p.last_page ?? (root.last_page as number) ?? 1;
+        totalCount = Number(p.total) || Number(root.total) || 0;
+        pageSize = Number(p.per_page) || Number(root.per_page) || 10;
+      } else if (Array.isArray(inner)) {
+        // Top-level paginator: { data: [...], last_page, ... } on same object as array
+        list = inner;
+        lastPage = (root.last_page as number) ?? 1;
+        totalCount = Number(root.total) || inner.length;
+        pageSize = Number(root.per_page) || 10;
+      } else if (Array.isArray(root.data)) {
+        list = root.data as unknown[];
+        lastPage = (root.last_page as number) ?? 1;
+        totalCount = Number(root.total) || list.length;
+        pageSize = Number(root.per_page) || 10;
+      }
+
+      setBlogs(list as never[]);
+      setTotalPages(Math.max(1, lastPage));
+      setTotal(totalCount);
+      setPerPage(pageSize || 10);
     } catch (e) {
       toast.error("Failed to load blogs");
     } finally {
@@ -192,32 +228,43 @@ const BlogsList = () => {
           )}
         </div>
 
-        <div className="flex justify-between items-center mt-4">
-          <div>
-            Showing{" "}
-            <span className="font-semibold">
-              {blogs.length === 0 ? 0 : (page - 1) * 10 + 1}{" "}
-              to{" "}
-              <span className="font-semibold">
-                {page * 10 > totalPages * 10 ? totalPages * 10 : page * 10}
-              </span>{" "}
-              of{" "}
-              <span className="font-semibold">{totalPages * 10}</span>{" "}
-              entries
-            </span>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4">
+          <div className="text-sm text-muted-foreground">
+            {total > 0 ? (
+              <>
+                Showing{" "}
+                <span className="font-semibold text-foreground">
+                  {(page - 1) * perPage + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-semibold text-foreground">
+                  {(page - 1) * perPage + blogs.length}
+                </span>{" "}
+                of <span className="font-semibold text-foreground">{total}</span> entries
+              </>
+            ) : blogs.length === 0 && !loading ? (
+              "No entries"
+            ) : (
+              <>
+                Page <span className="font-semibold text-foreground">{page}</span> of{" "}
+                <span className="font-semibold text-foreground">{totalPages}</span>
+              </>
+            )}
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
+              size="sm"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               Previous
             </Button>
             <Button
               variant="outline"
-              disabled={page === totalPages}
-              onClick={() => setPage(page + 1)}
+              size="sm"
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((p) => p + 1)}
             >
               Next
             </Button>

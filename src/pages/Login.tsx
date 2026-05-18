@@ -30,7 +30,7 @@ const Login = () => {
 
     try {
       const data = await loginApi(username, password);
-      console.log("check",data);
+      // console.log("check",data);
       if (data.roles && data.roles.includes("super admin") || data.roles.includes("admin")) {
         // console.log("check isAuthenticated");
         localStorage.setItem("isAuthenticated", "true");

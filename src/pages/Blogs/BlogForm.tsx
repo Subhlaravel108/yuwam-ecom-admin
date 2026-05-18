@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -60,12 +60,14 @@ const BlogForm = () => {
     meta_keywords: "",
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingBlog, setLoadingBlog] = useState(() => !!id);
+  const [saving, setSaving] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     const loadBlog = async () => {
       if (isEdit && id) {
-        setIsLoading(true);
+        setLoadingBlog(true);
         try {
           const res = await fetchBlog(id);
           // console.log("Fetched blog data:", res.data);
@@ -89,7 +91,7 @@ const BlogForm = () => {
         } catch (error) {
           toast.error("Failed to fetch blog details.");
         } finally {
-          setIsLoading(false);
+          setLoadingBlog(false);
         }
       }
     };
@@ -112,23 +114,31 @@ const BlogForm = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageUploading(true);
     try {
       const url = await uploadTourImage(file);
-      setBlog(prev => ({ ...prev, featuredImage: url }));
+      if (!url) {
+        toast.error("Image upload did not return a URL.");
+        return;
+      }
+      setBlog((prev) => ({ ...prev, featuredImage: url }));
       toast.success("Image uploaded!");
     } catch (error) {
       toast.error("Image upload failed");
+    } finally {
+      setImageUploading(false);
+      e.target.value = "";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setSaving(true);
 
     // Validate form
     if (!blog.title || !blog.category) {
       toast.error("Please fill in all required fields.");
-      setIsLoading(false);
+      setSaving(false);
       return;
     }
 
@@ -161,11 +171,11 @@ const BlogForm = () => {
       console.error("Error saving blog:", error);
       toast.error(error?.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  if (isLoading) {
+  if (loadingBlog) {
     return <BlogFormSkeleton />;
   }
 
@@ -177,10 +187,7 @@ const BlogForm = () => {
           Back to Blogs
         </Button>
       </div>
-      {isLoading ? (
-        <BlogFormSkeleton />
-      ) : (
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle>{isEdit ? "Edit Blog Post" : "Create New Blog Post"}</CardTitle>
             <CardDescription>
@@ -203,6 +210,7 @@ const BlogForm = () => {
                     onChange={handleChange}
                     placeholder="Enter blog title"
                     required
+                    disabled={saving}
                   />
                 </div>
                 <div className="space-y-2">
@@ -288,7 +296,7 @@ const BlogForm = () => {
                     placeholder="Enter tags separated by commas"
                   />
                 </div>
-                <div className="space-y-2 md:col-span-2">
+                <div className="relative space-y-2 md:col-span-2">
                   <label htmlFor="featuredImage" className="text-sm font-medium">
                     Featured Image
                   </label>
@@ -298,8 +306,16 @@ const BlogForm = () => {
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
+                    disabled={imageUploading || saving}
+                    className={imageUploading ? "opacity-60" : undefined}
                   />
-                  {blog.featuredImage && (
+                  {imageUploading && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                      Uploading image…
+                    </div>
+                  )}
+                  {blog.featuredImage && !imageUploading && (
                     <div className="mt-2">
                       <img
                         src={blog.featuredImage}
@@ -374,12 +390,15 @@ const BlogForm = () => {
                 </div>
               </div>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => navigate("/blogs")}>
+                <Button type="button" variant="outline" onClick={() => navigate("/blogs")}>
                   Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={isLoading}>
-                  {isLoading ? (
-                    "Saving..."
+                <Button type="submit" disabled={saving || imageUploading} className="gap-2">
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving…
+                    </>
                   ) : isEdit ? (
                     "Update Blog"
                   ) : (
@@ -390,7 +409,6 @@ const BlogForm = () => {
             </form>
           </CardContent>
         </Card>
-      )}
     </div>
   );
 };
