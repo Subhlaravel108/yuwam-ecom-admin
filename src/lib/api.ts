@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "https://api.yuwam.edu.in/api/v1",
-  // baseURL: "http://10.95.4.86:9000/api/v1",
+  // baseURL: "http://127.0.0.1:8000/api/v1",
 });
 
 export default api;
